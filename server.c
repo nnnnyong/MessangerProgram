@@ -64,12 +64,13 @@ void receive_file(int sockfd, const char *filepath) {
     ssize_t bytesRead;
 
     while ((bytesRead = recv(sockfd, buffer, sizeof(buffer), 0)) > 0) {
-        if (strcmp(buffer, "<EOF>") == 0)
+        //if (strncmp(buffer, "<EOF>", 5) == 0)
             // 파일의 끝인 경우 종료
-            break;
+            //break;
         fwrite(buffer, 1, bytesRead, file);
     }
 
+    printf("close file\n");
     fclose(file);
 }
 
@@ -115,6 +116,7 @@ int main(void) {
             exit(1);
         }
 
+        printf("again\n");
         if (FD_ISSET(sockfd, &readfds)) {
             // 새로운 접속이 있을 때
             struct sockaddr_in cl;

@@ -109,7 +109,7 @@ void send_file(int sockfd, const char *filename) {
     while ((bytesRead = fread(buffer, 1, sizeof(buffer), file)) > 0) {
         send(sockfd, buffer, bytesRead, 0);
     }
-    send(sockfd, "<EOF>", 5, 0);
+    // send(sockfd, "<EOF>", 5, 0);
 
     fclose(file);
 }
