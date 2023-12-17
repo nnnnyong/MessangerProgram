@@ -11,11 +11,11 @@
 
 #define PORT 8080
 #define MAX_CONNECTIONS 20
+#define FILE_BUFFER_SIZE 1024
 
 typedef struct usernames_ls usernames_ls;
 typedef struct clients_info clients_info;
 typedef enum CLIENT_STATUS CLIENT_STATUS;
-
 
 enum CLIENT_STATUS {
     IN_CHAT,
@@ -38,6 +38,40 @@ int find_max(clients_info *cl) {
     return (ans < cl->sockfd) ? cl->sockfd : ans; 
 }
 
+char *parse_filename(char *filepath) {
+    char *filename = strrchr(filepath, '/');
+
+    if (filename != NULL) {
+        filename++;
+    }
+    else {
+        filename = filepath;
+    }
+
+    return filename;
+}
+void receive_file(int sockfd, const char *filepath) {
+    // 파일 경로에서 파일 이름 파싱
+    char *filename = parse_filename(filepath);
+
+    FILE *file = fopen(filename, "wb");
+    if (file == NULL) {
+        perror("file open error");
+        return;
+    }
+
+    char buffer[FILE_BUFFER_SIZE];
+    ssize_t bytesRead;
+
+    while ((bytesRead = recv(sockfd, buffer, sizeof(buffer), 0)) > 0) {
+        if (strcmp(buffer, "<EOF>") == 0)
+            // 파일의 끝인 경우 종료
+            break;
+        fwrite(buffer, 1, bytesRead, file);
+    }
+
+    fclose(file);
+}
 
 int main(void) {
     int sockfd, maxfd;
@@ -137,6 +171,16 @@ int main(void) {
                     else {
                         switch(clt->status) {
                             case IN_CHAT:{
+                                if (strncmp(msg, "<file>", 6) == 0) {
+                                    // 파일 전송인 경우
+                                    char filepath[256];
+                                    sscanf(msg, "<file>%256s", filepath);
+
+                                    printf("Receiving file %s from %s\n", filepath, clt->name);
+                                    receive_file(clt->sockfd, filepath);
+                                    
+                                    break;
+                                }
                                 char send_message[50];
                                 send_message[0] = '\0';
                                 strcat(send_message,"<");
